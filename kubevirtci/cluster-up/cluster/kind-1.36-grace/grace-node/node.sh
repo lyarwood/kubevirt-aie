@@ -70,52 +70,7 @@ EOF
 }
 
 function node::deploy_iommufd_device_plugin() {
-  _kubectl apply -f - <<'EOF'
-apiVersion: apps/v1
-kind: DaemonSet
-metadata:
-  name: iommufd-device-plugin
-  namespace: kube-system
-spec:
-  selector:
-    matchLabels:
-      name: iommufd-device-plugin
-  template:
-    metadata:
-      labels:
-        name: iommufd-device-plugin
-    spec:
-      priorityClassName: system-node-critical
-      containers:
-      - name: iommufd-device-plugin
-        image: quay.io/kubevirt/iommufd-device-plugin:v0.0.1
-        args:
-        - -log-level=info
-        - -socket-dir=/var/run/kubevirt/fd-sockets
-        securityContext:
-          privileged: true
-        volumeMounts:
-        - name: device-plugin
-          mountPath: /var/lib/kubelet/device-plugins
-        - name: dev
-          mountPath: /dev
-        - name: fd-sockets
-          mountPath: /var/run/kubevirt/fd-sockets
-      volumes:
-      - name: device-plugin
-        hostPath:
-          path: /var/lib/kubelet/device-plugins
-      - name: dev
-        hostPath:
-          path: /dev
-      - name: fd-sockets
-        hostPath:
-          path: /var/run/kubevirt/fd-sockets
-          type: DirectoryOrCreate
-EOF
-
-  echo "Waiting for iommufd-device-plugin to be ready..."
-  _kubectl -n kube-system rollout status daemonset/iommufd-device-plugin --timeout=120s || true
+  echo "Skipping iommufd-device-plugin — deploy manually from https://github.com/kubevirt/iommufd-device-plugin"
 
   echo "IOMMUFD resources:"
   _kubectl get nodes -o json | jq '.items[].status.allocatable | to_entries[] | select(.key | contains("iommufd"))' || true
