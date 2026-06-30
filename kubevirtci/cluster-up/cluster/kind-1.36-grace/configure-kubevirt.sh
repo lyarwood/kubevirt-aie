@@ -49,3 +49,7 @@ _kubectl patch kubevirt kubevirt -n kubevirt \
   --type merge -p "{\"spec\":{\"configuration\":{\"permittedHostDevices\":{\"pciHostDevices\":${pci_host_devices}}}}}"
 
 echo "KubeVirt configured for Grace GPU passthrough"
+
+# Deploy the AIE webhook (requires kubevirt namespace to exist)
+source ${SCRIPT_PATH}/grace-node/node.sh
+node::deploy_aie_webhook

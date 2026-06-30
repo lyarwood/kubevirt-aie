@@ -15,6 +15,5 @@ node::setup_vfio "${nodes[*]}"
 node::deploy_gpu_device_plugin
 node::deploy_iommufd_device_plugin
 node::deploy_cert_manager
-node::deploy_aie_webhook
 
 _kubectl get nodes -o wide
