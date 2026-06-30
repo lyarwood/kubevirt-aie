@@ -214,7 +214,7 @@ spec:
       serviceAccountName: kubevirt-aie-webhook
       containers:
       - name: webhook
-        image: quay.io/kubevirt/kubevirt-aie-webhook:latest
+        image: quay.io/kubevirt/kubevirt-aie-webhook:v1.1.0
         ports:
         - containerPort: 9443
           name: webhook
