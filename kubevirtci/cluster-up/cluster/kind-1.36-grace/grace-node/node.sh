@@ -70,7 +70,28 @@ EOF
 }
 
 function node::deploy_iommufd_device_plugin() {
-  echo "Skipping iommufd-device-plugin — deploy manually from https://github.com/kubevirt/iommufd-device-plugin"
+  local dp_bin="/usr/local/bin/iommufd-device-plugin"
+  local dp_src="/tmp/iommufd-device-plugin"
+  local nodes_array=($(_kubectl get nodes -o custom-columns=:.metadata.name --no-headers))
+
+  if [ ! -f "${dp_src}" ]; then
+    echo "Building iommufd-device-plugin from source..."
+    local build_dir=$(mktemp -d)
+    git clone --depth 1 https://github.com/kubevirt/iommufd-device-plugin.git "${build_dir}/iommufd-device-plugin"
+    (cd "${build_dir}/iommufd-device-plugin" && CGO_ENABLED=0 go build -o "${dp_src}" ./cmd/main.go)
+    rm -rf "${build_dir}"
+  fi
+
+  for node in "${nodes_array[@]}"; do
+    echo "Deploying iommufd-device-plugin on ${node}..."
+    ${CRI_BIN} cp "${dp_src}" "${node}:${dp_bin}"
+    ${CRI_BIN} exec "${node}" chmod +x "${dp_bin}"
+    ${CRI_BIN} exec "${node}" mkdir -p /var/run/kubevirt/fd-sockets
+    ${CRI_BIN} exec -d "${node}" bash -c "${dp_bin} -log-level=info -socket-dir=/var/run/kubevirt/fd-sockets > /tmp/iommufd-dp.log 2>&1"
+  done
+
+  echo "Waiting for iommufd-device-plugin to register..."
+  sleep 10
 
   echo "IOMMUFD resources:"
   _kubectl get nodes -o json | jq '.items[].status.allocatable | to_entries[] | select(.key | contains("iommufd"))' || true
