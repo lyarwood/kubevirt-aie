@@ -51,6 +51,9 @@ EOF
   fi
 
   cat <<EOF >> "$kind_config"
+  - containerPath: /var/run/kubevirt/fd-sockets
+    hostPath: /var/run/kubevirt/fd-sockets
+    propagation: Bidirectional
   - containerPath: /sys/bus/pci/devices
     hostPath: /sys/bus/pci/devices
   - containerPath: /sys/class/iommu
