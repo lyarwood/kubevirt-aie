@@ -88,7 +88,7 @@ spec:
       priorityClassName: system-node-critical
       containers:
       - name: iommufd-device-plugin
-        image: quay.io/kubevirt/iommufd-device-plugin:latest
+        image: quay.io/kubevirt/iommufd-device-plugin:v0.0.1
         args:
         - -log-level=info
         - -socket-dir=/var/run/kubevirt/fd-sockets
