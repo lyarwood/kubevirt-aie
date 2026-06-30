@@ -116,6 +116,7 @@ function _bind_gpus_to_vfio() {
 function up() {
   _load_grace_modules
   _bind_gpus_to_vfio
+  mkdir -p /var/run/kubevirt/fd-sockets
 
   echo 'Discovering NVIDIA GPUs for Grace passthrough...'
   lspci -d 10de: -nn || true
