@@ -282,7 +282,7 @@ webhooks:
     service:
       name: kubevirt-aie-webhook
       namespace: kubevirt
-      path: /mutate
+      path: /mutate-pods
       port: 443
   rules:
   - operations: ["CREATE"]
