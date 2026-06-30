@@ -70,7 +70,12 @@ for resource in $gpu_resources; do
   device_names+="\"${resource}\""
 done
 
+# Deploy the AIE webhook (requires kubevirt namespace to exist)
+source ${SCRIPT_PATH}/grace-node/node.sh
+node::deploy_aie_webhook
+
 # Update the AIE webhook ConfigMap with the discovered launcher image and GPU devices
+# (must be after deploy_aie_webhook which creates the initial empty ConfigMap)
 _kubectl apply -f - <<CMEOF
 apiVersion: v1
 kind: ConfigMap
@@ -86,10 +91,6 @@ data:
         deviceNames:
 $(for resource in $gpu_resources; do echo "        - \"${resource}\""; done)
 CMEOF
-
-# Deploy the AIE webhook (requires kubevirt namespace to exist)
-source ${SCRIPT_PATH}/grace-node/node.sh
-node::deploy_aie_webhook
 
 # Restart the webhook to pick up the new config
 _kubectl rollout restart deployment/kubevirt-aie-webhook -n kubevirt 2>/dev/null || true
