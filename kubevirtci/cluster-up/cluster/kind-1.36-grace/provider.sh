@@ -118,7 +118,12 @@ function up() {
   lspci -d 10de: -nn || true
   echo ""
 
-  export KUBEVIRT_NUM_NODES=${KUBEVIRT_NUM_NODES:-2}
+  # CPU manager requires a worker node — the JoinConfiguration kubelet patch
+  # only applies to workers, not the control-plane. Override the default of 1
+  # unless the user explicitly set KUBEVIRT_NUM_NODES > 1.
+  if [ "${KUBEVIRT_NUM_NODES}" -le 1 ] 2>/dev/null; then
+    export KUBEVIRT_NUM_NODES=2
+  fi
 
   cp $KIND_MANIFESTS_DIR/kind.yaml ${KUBEVIRTCI_CONFIG_PATH}/$KUBEVIRT_PROVIDER/kind.yaml
   _add_kubeadm_cpu_manager_config_patch
