@@ -76,7 +76,10 @@ function _add_grace_topology_manager_options() {
 
 function _load_grace_modules() {
   modprobe -q iommufd || true
-  modprobe -q vfio-pci || true
+  # nvgrace-gpu-vfio-pci handles Grace-specific VFIO reset and C2C coherent
+  # link setup. Using generic vfio-pci causes kbusVerifyCoherentLink crashes
+  # in the NVIDIA guest driver (VOYAGER-1197).
+  modprobe -q nvgrace-gpu-vfio-pci || true
 }
 
 function _bind_gpus_to_vfio() {
@@ -84,29 +87,25 @@ function _bind_gpus_to_vfio() {
   gpu_bdfs=$(lspci -d 10de: -D | grep -i '3D controller' | awk '{print $1}')
 
   if [ -z "$gpu_bdfs" ]; then
-    echo "WARNING: No NVIDIA 3D controller GPUs found to bind to vfio-pci"
+    echo "WARNING: No NVIDIA 3D controller GPUs found"
     return
   fi
+
+  # Bind via new_id rather than driver_override — nvgrace-gpu-vfio-pci
+  # cannot reclaim devices from vfio-pci without a full reboot.
+  echo "10de 2941" > /sys/bus/pci/drivers/nvgrace_gpu_vfio_pci/new_id 2>/dev/null || true
+  sleep 2
 
   for bdf in $gpu_bdfs; do
     local current_driver
     current_driver=$(basename "$(readlink /sys/bus/pci/devices/$bdf/driver 2>/dev/null)" 2>/dev/null || true)
-
-    if [ "$current_driver" = "vfio-pci" ]; then
-      continue
-    fi
-
-    echo "Binding $bdf to vfio-pci (was: ${current_driver:-unbound})"
-    echo "$bdf" > /sys/bus/pci/devices/$bdf/driver/unbind 2>/dev/null || true
-    echo "vfio-pci" > /sys/bus/pci/devices/$bdf/driver_override
-    echo "$bdf" > /sys/bus/pci/drivers/vfio-pci/bind
+    echo "$bdf bound to: ${current_driver:-UNBOUND}"
   done
 
   # VFIO cdev devices are created with 0600 permissions but virt-launcher
   # runs as non-root (UID 107) and needs to open them.
   chmod 666 /dev/vfio/devices/* 2>/dev/null || true
 
-  echo "VFIO devices: $(ls /dev/vfio/ 2>/dev/null)"
   echo "VFIO cdevs: $(ls /dev/vfio/devices/ 2>/dev/null)"
 }
 
